@@ -1,0 +1,1711 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lumina - Nature Photo Editor & Color Grading Studio</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            forest: {
+              50: '#f2f9f4',
+              100: '#e1f2e6',
+              500: '#22c55e',
+              600: '#16a34a',
+              700: '#15803d',
+              800: '#166534',
+              900: '#14532d',
+              950: '#072714',
+            },
+            dark: {
+              900: '#0c0f12',
+              850: '#12171d',
+              800: '#181f26',
+              750: '#202933',
+              700: '#2b3644',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Custom scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #12171d;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #2b3644;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #3f4e61;
+    }
+
+    /* Custom range sliders */
+    input[type=range] {
+      -webkit-appearance: none;
+      background: transparent;
+    }
+    input[type=range]:focus {
+      outline: none;
+    }
+    input[type=range]::-webkit-slider-runnable-track {
+      width: 100%;
+      height: 4px;
+      cursor: pointer;
+      background: #2b3644;
+      border-radius: 2px;
+      transition: background 0.2s;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      height: 14px;
+      width: 14px;
+      border-radius: 50%;
+      background: #4ade80;
+      cursor: pointer;
+      -webkit-appearance: none;
+      margin-top: -5px;
+      box-shadow: 0 0 8px rgba(74, 222, 128, 0.4);
+      transition: transform 0.1s, background-color 0.1s;
+    }
+    input[type=range]::-webkit-slider-thumb:hover {
+      transform: scale(1.2);
+      background: #86efac;
+    }
+
+    /* Color balance sliders with specialized gradients */
+    .slider-red::-webkit-slider-runnable-track {
+      background: linear-gradient(to right, #00ffff, #374151, #ef4444);
+    }
+    .slider-green::-webkit-slider-runnable-track {
+      background: linear-gradient(to right, #ec4899, #374151, #22c55e);
+    }
+    .slider-blue::-webkit-slider-runnable-track {
+      background: linear-gradient(to right, #eab308, #374151, #3b82f6);
+    }
+
+    /* Comparison Split Slider handle */
+    .split-divider {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: #ffffff;
+      box-shadow: 0 0 10px rgba(0,0,0,0.8);
+      cursor: ew-resize;
+      z-index: 30;
+      pointer-events: none;
+    }
+    .split-handle {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 32px;
+      height: 32px;
+      background: #ffffff;
+      border-radius: 50%;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #0c0f12;
+      pointer-events: auto;
+      cursor: ew-resize;
+    }
+  </style>
+</head>
+<body class="bg-dark-900 text-slate-200 min-h-screen flex flex-col font-sans select-none antialiased overflow-hidden">
+
+  <!-- TOP APP BAR -->
+  <header class="h-14 border-b border-dark-750 bg-dark-850 px-4 flex items-center justify-between z-20 flex-shrink-0">
+    <!-- Brand -->
+    <div class="flex items-center gap-3">
+      <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center text-white shadow-lg shadow-emerald-950/40">
+        <i data-lucide="leaf" class="w-4 h-4"></i>
+      </div>
+      <div>
+        <h1 class="font-bold text-sm tracking-wide text-white flex items-center gap-2">
+          LUMINA <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">NATURE PRO</span>
+        </h1>
+      </div>
+    </div>
+
+    <!-- Center Quick Actions: Sample Photos & Compare Mode -->
+    <div class="hidden md:flex items-center gap-2 bg-dark-800 p-1 rounded-xl border border-dark-750 text-xs">
+      <span class="text-slate-400 px-2 font-medium">Nature Samples:</span>
+      <button onclick="loadSample('forest')" class="px-2.5 py-1 rounded-lg hover:bg-dark-700 text-slate-300 hover:text-white transition">Emerald Forest</button>
+      <button onclick="loadSample('sunset')" class="px-2.5 py-1 rounded-lg hover:bg-dark-700 text-slate-300 hover:text-white transition">Alpine Glow</button>
+      <button onclick="loadSample('ocean')" class="px-2.5 py-1 rounded-lg hover:bg-dark-700 text-slate-300 hover:text-white transition">Misty Coast</button>
+      <button onclick="loadSample('macro')" class="px-2.5 py-1 rounded-lg hover:bg-dark-700 text-slate-300 hover:text-white transition">Macro Flora</button>
+    </div>
+
+    <!-- Right Actions: Undo, Redo, Compare, Export -->
+    <div class="flex items-center gap-2">
+      <button id="btnUndo" onclick="undo()" title="Undo (Ctrl+Z)" class="p-2 rounded-lg bg-dark-800 hover:bg-dark-700 text-slate-400 hover:text-white transition disabled:opacity-30 disabled:pointer-events-none">
+        <i data-lucide="undo-2" class="w-4 h-4"></i>
+      </button>
+      <button id="btnRedo" onclick="redo()" title="Redo (Ctrl+Y)" class="p-2 rounded-lg bg-dark-800 hover:bg-dark-700 text-slate-400 hover:text-white transition disabled:opacity-30 disabled:pointer-events-none">
+        <i data-lucide="redo-2" class="w-4 h-4"></i>
+      </button>
+
+      <div class="h-5 w-[1px] bg-dark-750 mx-1"></div>
+
+      <!-- Compare Button -->
+      <button id="btnCompare" onclick="toggleCompareMode()" class="px-3 py-1.5 rounded-lg border border-dark-700 bg-dark-800 hover:bg-dark-750 text-xs font-medium flex items-center gap-1.5 transition text-slate-300">
+        <i data-lucide="split-square-vertical" class="w-3.5 h-3.5 text-emerald-400"></i>
+        <span>Split View</span>
+      </button>
+
+      <!-- Upload Local Image -->
+      <label class="cursor-pointer px-3 py-1.5 rounded-lg border border-dark-700 bg-dark-800 hover:bg-dark-750 text-xs font-medium flex items-center gap-1.5 transition text-slate-300 hover:text-white">
+        <i data-lucide="upload" class="w-3.5 h-3.5"></i>
+        <span>Upload</span>
+        <input type="file" id="fileInput" accept="image/*" class="hidden" onchange="handleFileUpload(event)">
+      </label>
+
+      <!-- Export Button -->
+      <button onclick="openExportModal()" class="px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-slate-950 font-semibold text-xs flex items-center gap-1.5 transition shadow-sm">
+        <i data-lucide="download" class="w-3.5 h-3.5"></i>
+        <span>Export</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- WORKSPACE -->
+  <div class="flex-1 flex overflow-hidden relative">
+
+    <!-- LEFT TOOLBAR / PRESET GALLERY -->
+    <aside class="w-64 border-r border-dark-750 bg-dark-850 flex flex-col flex-shrink-0 z-10">
+      <div class="p-3 border-b border-dark-750 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <i data-lucide="sparkles" class="w-4 h-4 text-emerald-400"></i>
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-300">Nature Presets</span>
+        </div>
+        <span class="text-[11px] text-slate-500 font-mono" id="presetCount">8 styles</span>
+      </div>
+
+      <!-- Presets Scroll List -->
+      <div class="flex-1 overflow-y-auto p-3 space-y-2.5" id="presetsList">
+        <!-- Dynamically rendered presets with nature focus -->
+      </div>
+
+      <!-- Reset All -->
+      <div class="p-3 border-t border-dark-750 bg-dark-850">
+        <button onclick="resetAllAdjustments()" class="w-full py-2 px-3 rounded-lg border border-red-500/30 hover:border-red-500/60 bg-red-500/10 hover:bg-red-500/20 text-red-300 text-xs font-medium flex items-center justify-center gap-2 transition">
+          <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+          <span>Reset All Adjustments</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- CENTER PREVIEW CANVAS AREA -->
+    <main class="flex-1 bg-dark-900 relative overflow-hidden flex flex-col items-center justify-center select-none" id="viewport">
+      
+      <!-- Canvas Wrapper with Drag & Drop Listener -->
+      <div id="dropZone" class="w-full h-full relative flex items-center justify-center p-4">
+        
+        <!-- Loading Spinner -->
+        <div id="loader" class="hidden absolute z-40 flex flex-col items-center gap-3 bg-dark-900/80 px-6 py-4 rounded-xl backdrop-blur-md border border-dark-700">
+          <div class="w-8 h-8 border-3 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+          <span class="text-xs text-slate-300 font-mono">Rendering Nature LUT...</span>
+        </div>
+
+        <!-- Before / After Label Tags -->
+        <div id="compareTags" class="hidden absolute top-6 left-6 right-6 flex justify-between z-30 pointer-events-none text-xs font-mono font-medium">
+          <span class="bg-dark-900/80 backdrop-blur-sm px-2.5 py-1 rounded border border-dark-700 text-slate-400">ORIGINAL</span>
+          <span class="bg-dark-900/80 backdrop-blur-sm px-2.5 py-1 rounded border border-emerald-500/40 text-emerald-400">GRADED</span>
+        </div>
+
+        <!-- The Interactive Canvas Container -->
+        <div id="canvasContainer" class="relative max-w-full max-h-full flex items-center justify-center shadow-2xl rounded-lg overflow-hidden border border-dark-750">
+          <!-- Main Graded Canvas -->
+          <canvas id="mainCanvas" class="max-w-full max-h-[calc(100vh-140px)] object-contain block"></canvas>
+          
+          <!-- Original Image (Clipped for Before/After split) -->
+          <div id="splitOverlay" class="absolute inset-0 overflow-hidden pointer-events-none hidden" style="width: 50%;">
+            <canvas id="originalCanvas" class="max-w-none block"></canvas>
+          </div>
+
+          <!-- Split Divider Line & Draggable Handle -->
+          <div id="splitDivider" class="split-divider hidden" style="left: 50%;">
+            <div id="splitHandle" class="split-handle">
+              <i data-lucide="chevrons-left-right" class="w-4 h-4"></i>
+            </div>
+          </div>
+        </div>
+
+        <!-- Floating Quick Viewport Tools (Zoom, Fit, Details) -->
+        <div class="absolute bottom-6 left-1/2 -translate-x-1/2 bg-dark-850/90 backdrop-blur-md border border-dark-750 px-3 py-1.5 rounded-full flex items-center gap-3 shadow-xl z-20 text-xs">
+          <button onclick="zoomOut()" class="p-1 hover:text-emerald-400 text-slate-400 transition" title="Zoom Out"><i data-lucide="zoom-out" class="w-4 h-4"></i></button>
+          <span id="zoomLevel" class="font-mono text-[11px] text-slate-300 min-w-[42px] text-center">100%</span>
+          <button onclick="zoomIn()" class="p-1 hover:text-emerald-400 text-slate-400 transition" title="Zoom In"><i data-lucide="zoom-in" class="w-4 h-4"></i></button>
+          <div class="h-3.5 w-[1px] bg-dark-750"></div>
+          <button onclick="resetZoom()" class="p-1 hover:text-emerald-400 text-slate-400 transition text-[11px] font-medium" title="Fit to Screen">Fit Screen</button>
+          <div class="h-3.5 w-[1px] bg-dark-750"></div>
+          <button onclick="toggleHistogramOverlay()" class="p-1 hover:text-emerald-400 text-slate-400 transition" title="Toggle Histogram"><i data-lucide="bar-chart-2" class="w-4 h-4"></i></button>
+        </div>
+
+        <!-- Floating Live Histogram Card -->
+        <div id="histogramCard" class="absolute top-6 right-6 w-52 bg-dark-850/95 backdrop-blur-md border border-dark-700 rounded-xl p-3 shadow-2xl z-20 transition-all">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+              <i data-lucide="activity" class="w-3.5 h-3.5 text-emerald-400"></i> RGB Histogram
+            </span>
+            <button onclick="toggleHistogramOverlay()" class="text-slate-500 hover:text-slate-300"><i data-lucide="x" class="w-3 h-3"></i></button>
+          </div>
+          <canvas id="histogramCanvas" width="200" height="70" class="w-full h-16 bg-dark-900 rounded-lg border border-dark-750"></canvas>
+          <div class="flex justify-between items-center text-[10px] text-slate-500 font-mono mt-1 px-1">
+            <span>Darks</span>
+            <span>Midtones</span>
+            <span>Brights</span>
+          </div>
+        </div>
+
+      </div>
+    </main>
+
+    <!-- RIGHT INSPECTOR / EDITING TABS -->
+    <aside class="w-80 border-l border-dark-750 bg-dark-850 flex flex-col flex-shrink-0 z-10 overflow-hidden">
+      <!-- Tabs Header -->
+      <div class="flex border-b border-dark-750 bg-dark-800 text-xs font-semibold">
+        <button onclick="switchTab('tone')" id="tabBtn-tone" class="flex-1 py-3 px-2 text-center border-b-2 border-emerald-500 text-emerald-400 flex items-center justify-center gap-1.5 transition">
+          <i data-lucide="sliders" class="w-3.5 h-3.5"></i>
+          <span>Tone & Light</span>
+        </button>
+        <button onclick="switchTab('color')" id="tabBtn-color" class="flex-1 py-3 px-2 text-center border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center justify-center gap-1.5 transition">
+          <i data-lucide="palette" class="w-3.5 h-3.5"></i>
+          <span>Color Balance</span>
+        </button>
+        <button onclick="switchTab('optics')" id="tabBtn-optics" class="flex-1 py-3 px-2 text-center border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center justify-center gap-1.5 transition">
+          <i data-lucide="camera" class="w-3.5 h-3.5"></i>
+          <span>Optics & Detail</span>
+        </button>
+      </div>
+
+      <!-- Tab Content Area -->
+      <div class="flex-1 overflow-y-auto p-4 space-y-6">
+
+        <!-- TAB 1: TONE & LIGHT -->
+        <div id="tabContent-tone" class="space-y-5">
+          <!-- Nature Lighting Section -->
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                <i data-lucide="sun" class="w-3.5 h-3.5 text-amber-400"></i> Exposure & Atmosphere
+              </h3>
+              <button onclick="resetCategory(['exposure', 'contrast', 'brightness', 'highlights', 'shadows'])" class="text-[11px] text-slate-500 hover:text-emerald-400 transition">Reset</button>
+            </div>
+
+            <div class="space-y-3.5">
+              <!-- Exposure -->
+              <div>
+                <div class="flex justify-between text-xs mb-1">
+                  <span class="text-slate-300">Exposure</span>
+                  <span id="val-exposure" class="font-mono text-emerald-400">0.00 EV</span>
+                </div>
+                <input type="range" id="param-exposure" min="-100" max="100" value="0" oninput="updateParam('exposure', this.value)">
+              </div>
+
+              <!-- Contrast -->
+              <div>
+                <div class="flex justify-between text-xs mb-1">
+                  <span class="text-slate-300">Contrast</span>
+                  <span id="val-contrast" class="font-mono text-emerald-400">0</span>
+                </div>
+                <input type="range" id="param-contrast" min="-100" max="100" value="0" oninput="updateParam('contrast', this.value)">
+              </div>
+
+              <!-- Brightness -->
+              <div>
+                <div class="flex justify-between text-xs mb-1">
+                  <span class="text-slate-300">Brightness</span>
+                  <span id="val-brightness" class="font-mono text-emerald-400">0</span>
+                </div>
+                <input type="range" id="param-brightness" min="-100" max="100" value="0" oninput="updateParam('brightness', this.value)">
+              </div>
+
+              <!-- Nature Highlights Recovery (Sky/Sun) -->
+              <div>
+                <div class="flex justify-between text-xs mb-1">
+                  <span class="text-slate-300">Highlights Recovery</span>
+                  <span id="val-highlights" class="font-mono text-emerald-400">0</span>
+                </div>
+                <input type="range" id="param-highlights" min="-100" max="100" value="0" oninput="updateParam('highlights', this.value)">
+              </div>
+
+              <!-- Shadows (Deep Canopy/Foliage) -->
+              <div>
+                <div class="flex justify-between text-xs mb-1">
+                  <span class="text-slate-300">Shadows Lift</span>
+                  <span id="val-shadows" class="font-mono text-emerald-400">0</span>
+                </div>
+                <input type="range" id="param-shadows" min="-100" max="100" value="0" oninput="updateParam('shadows', this.value)">
+              </div>
+            </div>
+          </div>
+
+          <div class="h-[1px] bg-dark-750"></div>
+
+          <!-- White Balance (Outdoor Light) -->
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                <i data-lucide="thermometer" class="w-3.5 h-3.5 text-blue-400"></i> White Balance (Kelvin)
+              </h3>
+              <button onclick="resetCategory(['temperature', 'tint'])" class="text-[11px] text-slate-500 hover:text-emerald-400 transition">Reset</button>
+            </div>
+
+            <div class="space-y-3.5">
+              <!-- Temperature -->
+              <div>
+                <div class="flex justify-between text-xs mb-1">
+                  <span class="text-slate-300">Temperature (Cool / Warm)</span>
+                  <span id="val-temperature" class="font-mono text-emerald-400">5500 K</span>
+                </div>
+                <input type="range" id="param-temperature" min="-100" max="100" value="0" class="slider-blue" oninput="updateParam('temperature', this.value)">
+              </div>
+
+              <!-- Tint -->
+              <div>
+                <div class="flex justify-between text-xs mb-1">
+                  <span class="text-slate-300">Tint (Magenta / Green)</span>
+                  <span id="val-tint" class="font-mono text-emerald-400">0</span>
+                </div>
+                <input type="range" id="param-tint" min="-100" max="100" value="0" class="slider-green" oninput="updateParam('tint', this.value)">
+              </div>
+            </div>
+          </div>
+
+          <div class="h-[1px] bg-dark-750"></div>
+
+          <!-- Color Vibrance & Foliage Boost -->
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                <i data-lucide="droplet" class="w-3.5 h-3.5 text-emerald-400"></i> Vibrance & Saturation
+              </h3>
+              <button onclick="resetCategory(['vibrance', 'saturation'])" class="text-[11px] text-slate-500 hover:text-emerald-400 transition">Reset</button>
+            </div>
+
+            <div class="space-y-3.5">
+              <div>
+                <div class="flex justify-between text-xs mb-1">
+                  <span class="text-slate-300">Nature Vibrance</span>
+                  <span id="val-vibrance" class="font-mono text-emerald-400">0</span>
+                </div>
+                <input type="range" id="param-vibrance" min="-100" max="100" value="0" oninput="updateParam('vibrance', this.value)">
+              </div>
+
+              <div>
+                <div class="flex justify-between text-xs mb-1">
+                  <span class="text-slate-300">Global Saturation</span>
+                  <span id="val-saturation" class="font-mono text-emerald-400">0</span>
+                </div>
+                <input type="range" id="param-saturation" min="-100" max="100" value="0" oninput="updateParam('saturation', this.value)">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 2: COLOR BALANCE & 3-WAY SPLIT TONING -->
+        <div id="tabContent-color" class="space-y-5 hidden">
+          <!-- Nature Specific Channel HSL Boosters -->
+          <div class="p-3 bg-dark-800/80 rounded-xl border border-dark-750">
+            <h4 class="text-xs font-semibold text-emerald-300 mb-2 flex items-center gap-1.5">
+              <i data-lucide="trees" class="w-3.5 h-3.5"></i> Nature Foliage & Sky Toning
+            </h4>
+            <p class="text-[11px] text-slate-400 mb-3">Independent tone enhancers tuned specifically for outdoor foliage, rivers, and skies.</p>
+            
+            <div class="space-y-3">
+              <!-- Green Lushness -->
+              <div>
+                <div class="flex justify-between text-xs mb-1">
+                  <span class="text-slate-300">Foliage Greens Depth</span>
+                  <span id="val-foliageGreen" class="font-mono text-emerald-400">0</span>
+                </div>
+                <input type="range" id="param-foliageGreen" min="-100" max="100" value="0" class="slider-green" oninput="updateParam('foliageGreen', this.value)">
+              </div>
+
+              <!-- Sky / Water Blue -->
+              <div>
+                <div class="flex justify-between text-xs mb-1">
+                  <span class="text-slate-300">Sky & Water Cyan/Blue</span>
+                  <span id="val-skyBlue" class="font-mono text-emerald-400">0</span>
+                </div>
+                <input type="range" id="param-skyBlue" min="-100" max="100" value="0" class="slider-blue" oninput="updateParam('skyBlue', this.value)">
+              </div>
+
+              <!-- Golden Warmth -->
+              <div>
+                <div class="flex justify-between text-xs mb-1">
+                  <span class="text-slate-300">Sunset Golden Radiance</span>
+                  <span id="val-goldenWarmth" class="font-mono text-emerald-400">0</span>
+                </div>
+                <input type="range" id="param-goldenWarmth" min="-100" max="100" value="0" oninput="updateParam('goldenWarmth', this.value)">
+              </div>
+            </div>
+          </div>
+
+          <!-- Color Balance / Split Toning -->
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                <i data-lucide="disc" class="w-3.5 h-3.5 text-teal-400"></i> Split Toning (Color Balance)
+              </h3>
+              <button onclick="resetCategory(['cbRed', 'cbGreen', 'cbBlue', 'shadowTint', 'highlightTint'])" class="text-[11px] text-slate-500 hover:text-emerald-400 transition">Reset</button>
+            </div>
+
+            <!-- RGB Primary Color Offsets -->
+            <div class="space-y-3.5">
+              <div>
+                <div class="flex justify-between text-xs mb-1">
+                  <span class="text-slate-300">Cyan - Red Axis</span>
+                  <span id="val-cbRed" class="font-mono text-red-400">0</span>
+                </div>
+                <input type="range" id="param-cbRed" min="-100" max="100" value="0" class="slider-red" oninput="updateParam('cbRed', this.value)">
+              </div>
+
+              <div>
+                <div class="flex justify-between text-xs mb-1">
+                  <span class="text-slate-300">Magenta - Green Axis</span>
+                  <span id="val-cbGreen" class="font-mono text-emerald-400">0</span>
+                </div>
+                <input type="range" id="param-cbGreen" min="-100" max="100" value="0" class="slider-green" oninput="updateParam('cbGreen', this.value)">
+              </div>
+
+              <div>
+                <div class="flex justify-between text-xs mb-1">
+                  <span class="text-slate-300">Yellow - Blue Axis</span>
+                  <span id="val-cbBlue" class="font-mono text-blue-400">0</span>
+                </div>
+                <input type="range" id="param-cbBlue" min="-100" max="100" value="0" class="slider-blue" oninput="updateParam('cbBlue', this.value)">
+              </div>
+            </div>
+          </div>
+
+          <div class="h-[1px] bg-dark-750"></div>
+
+          <!-- Cinematic Shadows & Highlights Mood -->
+          <div>
+            <h4 class="text-xs font-semibold text-slate-300 mb-2">Cinematic Toning</h4>
+            <div class="space-y-3.5">
+              <div>
+                <div class="flex justify-between text-xs mb-1">
+                  <span class="text-slate-300">Shadow Tone (Teal Coolness)</span>
+                  <span id="val-shadowTint" class="font-mono text-teal-400">0</span>
+                </div>
+                <input type="range" id="param-shadowTint" min="-100" max="100" value="0" oninput="updateParam('shadowTint', this.value)">
+              </div>
+              <div>
+                <div class="flex justify-between text-xs mb-1">
+                  <span class="text-slate-300">Highlight Tone (Warm Amber)</span>
+                  <span id="val-highlightTint" class="font-mono text-amber-400">0</span>
+                </div>
+                <input type="range" id="param-highlightTint" min="-100" max="100" value="0" oninput="updateParam('highlightTint', this.value)">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 3: OPTICS, CLARITY & DETAIL -->
+        <div id="tabContent-optics" class="space-y-5 hidden">
+          <!-- Texture and Clarity -->
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                <i data-lucide="feather" class="w-3.5 h-3.5 text-purple-400"></i> Nature Texture & Clarity
+              </h3>
+              <button onclick="resetCategory(['clarity', 'dehaze', 'vignette', 'grain'])" class="text-[11px] text-slate-500 hover:text-emerald-400 transition">Reset</button>
+            </div>
+
+            <div class="space-y-3.5">
+              <!-- Clarity (Edge Micro-contrast for Bark, Leaves, Rocks) -->
+              <div>
+                <div class="flex justify-between text-xs mb-1">
+                  <span class="text-slate-300">Bark & Rock Clarity</span>
+                  <span id="val-clarity" class="font-mono text-emerald-400">0</span>
+                </div>
+                <input type="range" id="param-clarity" min="0" max="100" value="0" oninput="updateParam('clarity', this.value)">
+              </div>
+
+              <!-- Dehaze / Mist Enhancer -->
+              <div>
+                <div class="flex justify-between text-xs mb-1">
+                  <span class="text-slate-300">Mountain Dehaze / Mist</span>
+                  <span id="val-dehaze" class="font-mono text-emerald-400">0</span>
+                </div>
+                <input type="range" id="param-dehaze" min="-100" max="100" value="0" oninput="updateParam('dehaze', this.value)">
+              </div>
+
+              <!-- Vignette -->
+              <div>
+                <div class="flex justify-between text-xs mb-1">
+                  <span class="text-slate-300">Lens Vignette</span>
+                  <span id="val-vignette" class="font-mono text-emerald-400">0</span>
+                </div>
+                <input type="range" id="param-vignette" min="0" max="100" value="0" oninput="updateParam('vignette', this.value)">
+              </div>
+
+              <!-- Organic Film Grain -->
+              <div>
+                <div class="flex justify-between text-xs mb-1">
+                  <span class="text-slate-300">Fine Organic Grain</span>
+                  <span id="val-grain" class="font-mono text-emerald-400">0</span>
+                </div>
+                <input type="range" id="param-grain" min="0" max="100" value="0" oninput="updateParam('grain', this.value)">
+              </div>
+            </div>
+          </div>
+
+          <div class="h-[1px] bg-dark-750"></div>
+
+          <!-- Orientation & Geometric Adjustments -->
+          <div>
+            <h4 class="text-xs font-semibold text-slate-300 mb-3 flex items-center gap-1.5">
+              <i data-lucide="crop" class="w-3.5 h-3.5"></i> Orientation
+            </h4>
+            <div class="grid grid-cols-2 gap-2">
+              <button onclick="rotateImage(90)" class="py-2 px-3 rounded-lg bg-dark-800 hover:bg-dark-700 border border-dark-750 text-xs flex items-center justify-center gap-2 transition">
+                <i data-lucide="rotate-cw" class="w-3.5 h-3.5"></i>
+                <span>Rotate 90°</span>
+              </button>
+              <button onclick="flipHorizontal()" class="py-2 px-3 rounded-lg bg-dark-800 hover:bg-dark-700 border border-dark-750 text-xs flex items-center justify-center gap-2 transition">
+                <i data-lucide="flip-horizontal" class="w-3.5 h-3.5"></i>
+                <span>Flip H</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </aside>
+
+  </div>
+
+  <!-- EXPORT MODAL -->
+  <div id="exportModal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-dark-850 border border-dark-700 rounded-2xl w-full max-w-md p-6 shadow-2xl relative">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="font-bold text-base text-white flex items-center gap-2">
+          <i data-lucide="download" class="w-4 h-4 text-emerald-400"></i> Export Nature Photo
+        </h3>
+        <button onclick="closeExportModal()" class="text-slate-400 hover:text-white">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="space-y-4 mb-6">
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-1">File Name</label>
+          <input type="text" id="exportFileName" value="nature_graded" class="w-full bg-dark-900 border border-dark-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-emerald-500">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-medium text-slate-400 mb-1">Format</label>
+            <select id="exportFormat" class="w-full bg-dark-900 border border-dark-700 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-emerald-500">
+              <option value="image/jpeg">JPEG (Standard Web)</option>
+              <option value="image/png">PNG (Lossless High-Res)</option>
+              <option value="image/webp">WebP (Modern Compact)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-400 mb-1">Quality</label>
+            <select id="exportQuality" class="w-full bg-dark-900 border border-dark-700 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-emerald-500">
+              <option value="1.0">100% Maximum Quality</option>
+              <option value="0.92" selected>92% High Quality</option>
+              <option value="0.80">80% Web Optimized</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Resolution Details -->
+        <div class="p-3 bg-dark-900 rounded-lg border border-dark-750 text-xs space-y-1">
+          <div class="flex justify-between text-slate-400">
+            <span>Dimensions:</span>
+            <span id="exportDimensions" class="font-mono text-emerald-400">-- x -- px</span>
+          </div>
+          <div class="flex justify-between text-slate-400">
+            <span>Color Profile:</span>
+            <span class="font-mono text-slate-300">sRGB Rec. 709</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-3">
+        <button onclick="closeExportModal()" class="px-4 py-2 rounded-lg bg-dark-800 hover:bg-dark-750 text-xs font-medium text-slate-300 transition">Cancel</button>
+        <button onclick="executeExport()" class="px-4 py-2 rounded-lg bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-slate-950 text-xs font-semibold transition flex items-center gap-1.5 shadow-lg shadow-emerald-950/50">
+          <i data-lucide="check" class="w-4 h-4"></i> Download Photo
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JAVASCRIPT LOGIC ENGINE -->
+  <script>
+    /* -------------------------------------------------------------
+     *  STATE & PARAMETERS DEFINITION
+     * ------------------------------------------------------------- */
+    const defaultParams = {
+      // Exposure & Light
+      exposure: 0,       // -100 to 100
+      contrast: 0,       // -100 to 100
+      brightness: 0,     // -100 to 100
+      highlights: 0,     // -100 to 100
+      shadows: 0,        // -100 to 100
+      // White Balance
+      temperature: 0,    // -100 to 100 (Blue to Amber)
+      tint: 0,           // -100 to 100 (Magenta to Green)
+      // Saturation & Vibrance
+      vibrance: 0,       // -100 to 100
+      saturation: 0,     // -100 to 100
+      // Nature Foliage & Sky Toning
+      foliageGreen: 0,   // -100 to 100
+      skyBlue: 0,        // -100 to 100
+      goldenWarmth: 0,   // -100 to 100
+      // Color Balance (Cyan/Red, Magenta/Green, Yellow/Blue)
+      cbRed: 0,          // -100 to 100
+      cbGreen: 0,        // -100 to 100
+      cbBlue: 0,         // -100 to 100
+      shadowTint: 0,     // -100 to 100
+      highlightTint: 0,  // -100 to 100
+      // Optics & Details
+      clarity: 0,        // 0 to 100
+      dehaze: 0,         // -100 to 100
+      vignette: 0,       // 0 to 100
+      grain: 0           // 0 to 100
+    };
+
+    let params = { ...defaultParams };
+    let activePreset = 'none';
+    let baseImage = null; // HTMLImageElement
+    let rotationAngle = 0;
+    let flipH = 1;
+    let zoom = 1.0;
+
+    // History Stacks for Undo / Redo
+    const historyStack = [];
+    let historyIndex = -1;
+    const MAX_HISTORY = 25;
+
+    // Split / Comparison Mode
+    let isCompareMode = false;
+    let splitPos = 0.5; // 0 to 1
+    let isDraggingSplit = false;
+
+    // Nature Color Presets tuned for landscapes, foliage, and natural environments
+    const NATURE_PRESETS = [
+      {
+        id: 'lush_forest',
+        name: 'Lush Forest',
+        category: 'Foliage & Woods',
+        desc: 'Deep velvety greens with boosted clarity and rich shadows for deep woodland groves.',
+        params: {
+          contrast: 18,
+          highlights: -25,
+          shadows: 15,
+          foliageGreen: 38,
+          temperature: -5,
+          clarity: 25,
+          vibrance: 22,
+          cbGreen: 12,
+          vignette: 15
+        }
+      },
+      {
+        id: 'golden_hour',
+        name: 'Golden Hour Glow',
+        category: 'Sunrise & Sunset',
+        desc: 'Warm sunset radiance with soft amber highlights and honeyed sunlight.',
+        params: {
+          exposure: 6,
+          temperature: 42,
+          tint: 8,
+          goldenWarmth: 45,
+          highlights: -18,
+          shadows: 12,
+          vibrance: 28,
+          highlightTint: 25,
+          cbRed: 15,
+          vignette: 20
+        }
+      },
+      {
+        id: 'alpine_mist',
+        name: 'Alpine Cold & Mist',
+        category: 'Mountain Peak',
+        desc: 'High-altitude coolness, atmospheric mist, and crisp rock face contrast.',
+        params: {
+          temperature: -35,
+          contrast: 22,
+          dehaze: -20,
+          clarity: 35,
+          skyBlue: 30,
+          shadowTint: 22,
+          cbBlue: 18,
+          highlights: -15,
+          shadows: 5
+        }
+      },
+      {
+        id: 'autumn_warmth',
+        name: 'Earthy Autumn',
+        category: 'Seasonal',
+        desc: 'Transforms greens and foliage into warm rust, ochre, and deep crimson leaves.',
+        params: {
+          temperature: 28,
+          tint: 14,
+          goldenWarmth: 35,
+          foliageGreen: -35,
+          cbRed: 26,
+          cbGreen: -8,
+          contrast: 15,
+          vignette: 25,
+          grain: 12
+        }
+      },
+      {
+        id: 'teal_orange_nature',
+        name: 'Teal & Terracotta',
+        category: 'Cinematic Outdoor',
+        desc: 'Deep cyan water & skies paired with rich warm earth and foliage.',
+        params: {
+          contrast: 25,
+          skyBlue: 40,
+          goldenWarmth: 30,
+          shadowTint: 38,
+          highlightTint: 30,
+          cbBlue: 14,
+          cbRed: 18,
+          clarity: 20,
+          vignette: 20
+        }
+      },
+      {
+        id: 'natgeo_vivid',
+        name: 'National Geo Vivid',
+        category: 'Documentary',
+        desc: 'Hyper-detailed wildlife documentary aesthetic with punchy dynamic range.',
+        params: {
+          contrast: 28,
+          vibrance: 40,
+          saturation: 8,
+          clarity: 45,
+          foliageGreen: 25,
+          skyBlue: 25,
+          highlights: -30,
+          shadows: 20,
+          dehaze: 15
+        }
+      },
+      {
+        id: 'nordic_mood',
+        name: 'Moody Nordic Fog',
+        category: 'Moody & Dark',
+        desc: 'Desaturated, dramatic, quiet atmospheric tones with crushed darks and matte finish.',
+        params: {
+          exposure: -8,
+          contrast: 32,
+          saturation: -35,
+          temperature: -18,
+          shadows: -15,
+          dehaze: -15,
+          clarity: 30,
+          vignette: 45,
+          grain: 20
+        }
+      },
+      {
+        id: 'misty_monochrome',
+        name: 'Silvan B&W Fine Art',
+        category: 'Black & White',
+        desc: 'High-contrast fine art monochrome emphasizing nature textures and dramatic light.',
+        params: {
+          saturation: -100,
+          contrast: 45,
+          clarity: 50,
+          highlights: -25,
+          shadows: 15,
+          vignette: 35,
+          grain: 28
+        }
+      }
+    ];
+
+    // High quality Royalty-Free Nature Unsplash images
+    const SAMPLE_IMAGES = {
+      forest: 'https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=1400&q=80',
+      sunset: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1400&q=80',
+      ocean: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1400&q=80',
+      macro: 'https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?auto=format&fit=crop&w=1400&q=80'
+    };
+
+    /* -------------------------------------------------------------
+     *  CANVAS & RENDERING PIPELINE
+     * ------------------------------------------------------------- */
+    const mainCanvas = document.getElementById('mainCanvas');
+    const mainCtx = mainCanvas.getContext('2d', { willReadFrequently: true });
+
+    const originalCanvas = document.getElementById('originalCanvas');
+    const origCtx = originalCanvas.getContext('2d');
+
+    const histCanvas = document.getElementById('histogramCanvas');
+    const histCtx = histCanvas.getContext('2d');
+
+    // Offscreen Canvas for processing high performance raw data
+    const offCanvas = document.createElement('canvas');
+    const offCtx = offCanvas.getContext('2d', { willReadFrequently: true });
+
+    let renderDebounceTimer = null;
+
+    function renderImage(immediate = false) {
+      if (!baseImage) return;
+
+      if (immediate) {
+        executeRenderPipeline();
+      } else {
+        clearTimeout(renderDebounceTimer);
+        renderDebounceTimer = setTimeout(executeRenderPipeline, 20);
+      }
+    }
+
+    function executeRenderPipeline() {
+      if (!baseImage) return;
+
+      // Handle orientation dimensions
+      const isRotated = (rotationAngle % 180 !== 0);
+      const width = isRotated ? baseImage.height : baseImage.width;
+      const height = isRotated ? baseImage.width : baseImage.height;
+
+      // Set base Canvas dimensions
+      if (offCanvas.width !== width || offCanvas.height !== height) {
+        offCanvas.width = width;
+        offCanvas.height = height;
+        mainCanvas.width = width;
+        mainCanvas.height = height;
+        originalCanvas.width = width;
+        originalCanvas.height = height;
+      }
+
+      // Draw transformed original onto offscreen canvas
+      offCtx.save();
+      offCtx.clearRect(0, 0, width, height);
+      offCtx.translate(width / 2, height / 2);
+      offCtx.rotate((rotationAngle * Math.PI) / 180);
+      offCtx.scale(flipH, 1);
+      offCtx.drawImage(baseImage, -baseImage.width / 2, -baseImage.height / 2);
+      offCtx.restore();
+
+      // Render raw image into originalCanvas for Before/After split
+      origCtx.clearRect(0, 0, width, height);
+      origCtx.drawImage(offCanvas, 0, 0);
+
+      // Read pixel buffer for software grading engine
+      const imgData = offCtx.getImageData(0, 0, width, height);
+      const data = imgData.data;
+      const len = data.length;
+
+      // Unpack Params for loop optimization
+      const exp = params.exposure / 100; // -1 to 1
+      const expMult = Math.pow(2, exp); // Standard photography exposure stop formula
+
+      const contrastFactor = (259 * (params.contrast + 255)) / (255 * (259 - params.contrast));
+      const brightOffset = (params.brightness / 100) * 128;
+
+      const satMult = 1 + (params.saturation / 100);
+      const vibMult = params.vibrance / 100;
+
+      // Temperature / Tint offsets
+      const tempK = params.temperature / 100; // negative = blue, positive = amber
+      const tempR = tempK > 0 ? 1 + tempK * 0.4 : 1;
+      const tempB = tempK < 0 ? 1 - tempK * 0.4 : 1;
+      const tintG = 1 + (params.tint / 100) * 0.3;
+
+      // Color Balance offsets
+      const cbR = (params.cbRed / 100) * 45;
+      const cbG = (params.cbGreen / 100) * 45;
+      const cbB = (params.cbBlue / 100) * 45;
+
+      // Nature-specific color targets
+      const folGreen = params.foliageGreen / 100; // Boost foliage hue
+      const skyB = params.skyBlue / 100;
+      const goldW = params.goldenWarmth / 100;
+
+      // Split Tone
+      const sTint = params.shadowTint / 100;     // Teal in shadows
+      const hTint = params.highlightTint / 100;  // Amber in highlights
+
+      const highRec = params.highlights / 100;
+      const shadLift = params.shadows / 100;
+      const dehazeVal = params.dehaze / 100;
+
+      // Histogram collection arrays
+      const histR = new Uint32Array(256);
+      const histG = new Uint32Array(256);
+      const histB = new Uint32Array(256);
+
+      // Main pixel processing iteration
+      for (let i = 0; i < len; i += 4) {
+        let r = data[i];
+        let g = data[i + 1];
+        let b = data[i + 2];
+
+        // 1. Exposure & Brightness
+        r = r * expMult + brightOffset;
+        g = g * expMult + brightOffset;
+        b = b * expMult + brightOffset;
+
+        // 2. White Balance
+        r *= tempR;
+        g *= tintG;
+        b *= tempB;
+
+        // 3. Color Balance offsets
+        r += cbR;
+        g += cbG;
+        b += cbB;
+
+        // Calculate initial luminance (Rec. 709)
+        let lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+
+        // 4. Highlights Recovery & Shadow Lift
+        if (highRec !== 0 && lum > 140) {
+          const factor = (lum - 140) / 115; // 0 to 1
+          const comp = 1 - (highRec * 0.4 * factor);
+          r *= comp;
+          g *= comp;
+          b *= comp;
+        }
+        if (shadLift !== 0 && lum < 120) {
+          const factor = (120 - lum) / 120; // 0 to 1
+          const lift = shadLift * 50 * factor;
+          r += lift;
+          g += lift;
+          b += lift;
+        }
+
+        // 5. Nature Foliage & Sky Color Isolation
+        // Green dominant pixels (foliage / leaves / moss)
+        if (g > r && g > b) {
+          if (folGreen > 0) {
+            g += folGreen * 35;
+            r -= folGreen * 10;
+          } else if (folGreen < 0) {
+            // Earthy Autumn shift
+            r -= folGreen * 30; // shift green to yellow/orange
+            g += folGreen * 15;
+          }
+        }
+
+        // Blue / Cyan dominant pixels (sky / ocean / rivers)
+        if (b > r) {
+          if (skyB !== 0) {
+            b += skyB * 35;
+            g += skyB * 10;
+          }
+        }
+
+        // Golden Warmth in Highlights
+        if (goldW !== 0 && lum > 110) {
+          const wFactor = (lum / 255) * goldW * 30;
+          r += wFactor;
+          g += wFactor * 0.6;
+        }
+
+        // 6. Split Toning (Shadows cool teal, Highlights warm amber)
+        const shadowMask = Math.max(0, 1 - (lum / 128));
+        const highlightMask = Math.max(0, (lum - 128) / 127);
+
+        if (sTint !== 0) {
+          b += sTint * 30 * shadowMask;
+          g += sTint * 15 * shadowMask;
+          r -= sTint * 15 * shadowMask;
+        }
+        if (hTint !== 0) {
+          r += hTint * 35 * highlightMask;
+          g += hTint * 20 * highlightMask;
+          b -= hTint * 20 * highlightMask;
+        }
+
+        // 7. Contrast
+        if (contrastFactor !== 1) {
+          r = contrastFactor * (r - 128) + 128;
+          g = contrastFactor * (g - 128) + 128;
+          b = contrastFactor * (b - 128) + 128;
+        }
+
+        // 8. Dehaze
+        if (dehazeVal !== 0) {
+          const hazeOffset = dehazeVal * 25;
+          r = (r - 128) * (1 + dehazeVal * 0.25) + 128 + hazeOffset;
+          g = (g - 128) * (1 + dehazeVal * 0.25) + 128 + hazeOffset;
+          b = (b - 128) * (1 + dehazeVal * 0.25) + 128 + hazeOffset;
+        }
+
+        // Recompute luminance for saturation & vibrance
+        lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+
+        // 9. Saturation & Smart Vibrance
+        const maxC = Math.max(r, g, b);
+        const minC = Math.min(r, g, b);
+        const currentSat = maxC === 0 ? 0 : (maxC - minC) / maxC;
+
+        // Vibrance affects less-saturated colors more smoothly
+        const effectiveSat = satMult + (vibMult * (1 - currentSat));
+
+        r = lum + (r - lum) * effectiveSat;
+        g = lum + (g - lum) * effectiveSat;
+        b = lum + (b - lum) * effectiveSat;
+
+        // Clamping 0 - 255
+        const finalR = r < 0 ? 0 : r > 255 ? 255 : (r | 0);
+        const finalG = g < 0 ? 0 : g > 255 ? 255 : (g | 0);
+        const finalB = b < 0 ? 0 : b > 255 ? 255 : (b | 0);
+
+        data[i] = finalR;
+        data[i + 1] = finalG;
+        data[i + 2] = finalB;
+
+        // Histogram bin count (subsampled for speed)
+        if (i % 16 === 0) {
+          histR[finalR]++;
+          histG[finalG]++;
+          histB[finalB]++;
+        }
+      }
+
+      // Write processed data to main canvas
+      mainCtx.putImageData(imgData, 0, 0);
+
+      // 10. Post-processing Overlays: Vignette & Grain
+      applyVignetteAndGrain(width, height);
+
+      // Render Live Histogram
+      drawHistogram(histR, histG, histB);
+
+      // Update split overlay geometry
+      syncSplitOverlay();
+    }
+
+    /* -------------------------------------------------------------
+     *  POST-PROCESSING: VIGNETTE & FILM GRAIN
+     * ------------------------------------------------------------- */
+    function applyVignetteAndGrain(width, height) {
+      if (params.vignette > 0) {
+        const radius = Math.sqrt(Math.pow(width / 2, 2) + Math.pow(height / 2, 2));
+        const vigGrad = mainCtx.createRadialGradient(
+          width / 2, height / 2, radius * 0.4,
+          width / 2, height / 2, radius
+        );
+        const strength = (params.vignette / 100) * 0.75;
+        vigGrad.addColorStop(0, 'rgba(0,0,0,0)');
+        vigGrad.addColorStop(1, `rgba(0,0,0,${strength})`);
+
+        mainCtx.save();
+        mainCtx.fillStyle = vigGrad;
+        mainCtx.fillRect(0, 0, width, height);
+        mainCtx.restore();
+      }
+
+      if (params.grain > 0) {
+        const grainCanvas = document.createElement('canvas');
+        const gW = 180;
+        const gH = 180;
+        grainCanvas.width = gW;
+        grainCanvas.height = gH;
+        const gCtx = grainCanvas.getContext('2d');
+        const gData = gCtx.createImageData(gW, gH);
+        const gLen = gData.data.length;
+        const grainAmount = (params.grain / 100) * 45;
+
+        for (let i = 0; i < gLen; i += 4) {
+          const noise = (Math.random() - 0.5) * grainAmount;
+          gData.data[i] = 128 + noise;
+          gData.data[i + 1] = 128 + noise;
+          gData.data[i + 2] = 128 + noise;
+          gData.data[i + 3] = 40; // light transparency
+        }
+        gCtx.putImageData(gData, 0, 0);
+
+        mainCtx.save();
+        mainCtx.globalCompositeOperation = 'overlay';
+        const pattern = mainCtx.createPattern(grainCanvas, 'repeat');
+        mainCtx.fillStyle = pattern;
+        mainCtx.fillRect(0, 0, width, height);
+        mainCtx.restore();
+      }
+    }
+
+    /* -------------------------------------------------------------
+     *  LIVE RGB HISTOGRAM DISPLAY
+     * ------------------------------------------------------------- */
+    function drawHistogram(rHist, gHist, bHist) {
+      const w = histCanvas.width;
+      const h = histCanvas.height;
+      histCtx.clearRect(0, 0, w, h);
+
+      // Find max count for normalized height
+      let maxCount = 1;
+      for (let i = 1; i < 255; i++) {
+        if (rHist[i] > maxCount) maxCount = rHist[i];
+        if (gHist[i] > maxCount) maxCount = gHist[i];
+        if (bHist[i] > maxCount) maxCount = bHist[i];
+      }
+
+      histCtx.globalCompositeOperation = 'screen';
+
+      const drawChannel = (hist, strokeColor, fillColor) => {
+        histCtx.beginPath();
+        histCtx.moveTo(0, h);
+        for (let x = 0; x < 256; x++) {
+          const nx = (x / 255) * w;
+          const ny = h - (hist[x] / maxCount) * (h - 4);
+          histCtx.lineTo(nx, ny);
+        }
+        histCtx.lineTo(w, h);
+        histCtx.fillStyle = fillColor;
+        histCtx.fill();
+        histCtx.strokeStyle = strokeColor;
+        histCtx.lineWidth = 1;
+        histCtx.stroke();
+      };
+
+      drawChannel(rHist, '#ef4444', 'rgba(239, 68, 68, 0.25)');
+      drawChannel(gHist, '#22c55e', 'rgba(34, 197, 94, 0.25)');
+      drawChannel(bHist, '#3b82f6', 'rgba(59, 130, 246, 0.25)');
+
+      histCtx.globalCompositeOperation = 'source-over';
+    }
+
+    /* -------------------------------------------------------------
+     *  PRESETS RENDER & MANAGEMENT
+     * ------------------------------------------------------------- */
+    function initPresets() {
+      const list = document.getElementById('presetsList');
+      list.innerHTML = '';
+
+      // Default Clean Neutral
+      const cleanCard = document.createElement('div');
+      cleanCard.className = `p-2.5 rounded-xl border border-dark-750 bg-dark-800/80 hover:bg-dark-750 cursor-pointer transition flex items-start gap-3 preset-card ${activePreset === 'none' ? 'ring-2 ring-emerald-500 bg-dark-750' : ''}`;
+      cleanCard.onclick = () => applyPreset('none');
+      cleanCard.innerHTML = `
+        <div class="w-10 h-10 rounded-lg bg-dark-700 flex items-center justify-center flex-shrink-0 text-slate-300">
+          <i data-lucide="image" class="w-5 h-5"></i>
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center justify-between">
+            <h4 class="text-xs font-semibold text-white">Natural Clean</h4>
+            <span class="text-[9px] font-mono text-emerald-400">Neutral</span>
+          </div>
+          <p class="text-[10px] text-slate-400 truncate mt-0.5">Original raw photo balance without color shift.</p>
+        </div>
+      `;
+      list.appendChild(cleanCard);
+
+      NATURE_PRESETS.forEach(preset => {
+        const card = document.createElement('div');
+        card.id = `preset-${preset.id}`;
+        card.className = `p-2.5 rounded-xl border border-dark-750 bg-dark-800/80 hover:bg-dark-750 cursor-pointer transition flex items-start gap-3 preset-card ${activePreset === preset.id ? 'ring-2 ring-emerald-500 bg-dark-750' : ''}`;
+        card.onclick = () => applyPreset(preset.id);
+
+        let iconName = 'leaf';
+        if (preset.id.includes('sunset')) iconName = 'sun';
+        if (preset.id.includes('mist') || preset.id.includes('alpine')) iconName = 'mountain';
+        if (preset.id.includes('autumn')) iconName = 'sparkles';
+        if (preset.id.includes('teal')) iconName = 'film';
+        if (preset.id.includes('natgeo')) iconName = 'camera';
+        if (preset.id.includes('monochrome')) iconName = 'contrast';
+
+        card.innerHTML = `
+          <div class="w-10 h-10 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center flex-shrink-0">
+            <i data-lucide="${iconName}" class="w-5 h-5"></i>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center justify-between">
+              <h4 class="text-xs font-semibold text-white">${preset.name}</h4>
+              <span class="text-[9px] font-mono text-emerald-400">${preset.category.split(' ')[0]}</span>
+            </div>
+            <p class="text-[10px] text-slate-400 line-clamp-1 mt-0.5">${preset.desc}</p>
+          </div>
+        `;
+        list.appendChild(card);
+      });
+
+      lucide.createIcons();
+    }
+
+    function applyPreset(presetId) {
+      pushHistory();
+      activePreset = presetId;
+
+      // Reset to defaults first
+      params = { ...defaultParams };
+
+      if (presetId !== 'none') {
+        const found = NATURE_PRESETS.find(p => p.id === presetId);
+        if (found) {
+          params = { ...params, ...found.params };
+        }
+      }
+
+      updateAllUIInputs();
+      renderImage();
+      highlightActivePreset();
+    }
+
+    function highlightActivePreset() {
+      document.querySelectorAll('.preset-card').forEach(el => el.classList.remove('ring-2', 'ring-emerald-500', 'bg-dark-750'));
+      if (activePreset === 'none') {
+        const first = document.querySelector('#presetsList > div:first-child');
+        if (first) first.classList.add('ring-2', 'ring-emerald-500', 'bg-dark-750');
+      } else {
+        const target = document.getElementById(`preset-${activePreset}`);
+        if (target) target.classList.add('ring-2', 'ring-emerald-500', 'bg-dark-750');
+      }
+    }
+
+    /* -------------------------------------------------------------
+     *  PARAMETER & SLIDER CONTROLS
+     * ------------------------------------------------------------- */
+    function updateParam(name, value) {
+      params[name] = parseFloat(value);
+      updateValueBadge(name, params[name]);
+      renderImage();
+    }
+
+    function updateValueBadge(name, val) {
+      const badge = document.getElementById(`val-${name}`);
+      if (!badge) return;
+
+      if (name === 'exposure') {
+        const ev = (val / 100 * 2).toFixed(2);
+        badge.innerText = `${ev > 0 ? '+' : ''}${ev} EV`;
+      } else if (name === 'temperature') {
+        const kelvin = 5500 + Math.round((val / 100) * 3500);
+        badge.innerText = `${kelvin} K`;
+      } else {
+        badge.innerText = `${val > 0 ? '+' : ''}${Math.round(val)}`;
+      }
+    }
+
+    function updateAllUIInputs() {
+      Object.keys(params).forEach(key => {
+        const input = document.getElementById(`param-${key}`);
+        if (input) input.value = params[key];
+        updateValueBadge(key, params[key]);
+      });
+    }
+
+    function resetCategory(keyArray) {
+      pushHistory();
+      keyArray.forEach(k => {
+        params[k] = defaultParams[k];
+      });
+      updateAllUIInputs();
+      renderImage();
+    }
+
+    function resetAllAdjustments() {
+      pushHistory();
+      params = { ...defaultParams };
+      activePreset = 'none';
+      highlightActivePreset();
+      updateAllUIInputs();
+      renderImage();
+    }
+
+    /* -------------------------------------------------------------
+     *  IMAGE LOADING & SAMPLES
+     * ------------------------------------------------------------- */
+    function loadSample(key) {
+      const url = SAMPLE_IMAGES[key];
+      if (!url) return;
+      loadImageFromUrl(url);
+    }
+
+    function loadImageFromUrl(url) {
+      showLoader(true);
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        baseImage = img;
+        rotationAngle = 0;
+        flipH = 1;
+        zoom = 1.0;
+        applyPreset(activePreset !== 'none' ? activePreset : 'lush_forest');
+        showLoader(false);
+        updateDimensionsLabel();
+      };
+      img.onerror = () => {
+        showLoader(false);
+        // Fallback to procedural nature gradient canvas
+        createFallbackCanvas();
+      };
+      img.src = url;
+    }
+
+    function handleFileUpload(e) {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+
+      showLoader(true);
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+          baseImage = img;
+          rotationAngle = 0;
+          flipH = 1;
+          resetAllAdjustments();
+          showLoader(false);
+          updateDimensionsLabel();
+        };
+        img.src = event.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function createFallbackCanvas() {
+      const fb = document.createElement('canvas');
+      fb.width = 1200;
+      fb.height = 800;
+      const ctx = fb.getContext('2d');
+      const grad = ctx.createLinearGradient(0, 0, 0, 800);
+      grad.addColorStop(0, '#2d5a3f');
+      grad.addColorStop(0.5, '#1e3f2b');
+      grad.addColorStop(1, '#0b1d13');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, 1200, 800);
+
+      // Nature tree foliage silhouettes
+      ctx.fillStyle = '#0f2719';
+      for (let i = 0; i < 20; i++) {
+        const x = i * 65;
+        const h = 300 + Math.random() * 250;
+        ctx.beginPath();
+        ctx.moveTo(x, 800);
+        ctx.lineTo(x + 40, 800 - h);
+        ctx.lineTo(x + 80, 800);
+        ctx.fill();
+      }
+
+      baseImage = fb;
+      renderImage();
+    }
+
+    function showLoader(visible) {
+      const loader = document.getElementById('loader');
+      if (loader) {
+        if (visible) loader.classList.remove('hidden');
+        else loader.classList.add('hidden');
+      }
+    }
+
+    function updateDimensionsLabel() {
+      if (!baseImage) return;
+      const w = baseImage.width;
+      const h = baseImage.height;
+      const dims = document.getElementById('exportDimensions');
+      if (dims) dims.innerText = `${w} × ${h} px`;
+    }
+
+    /* -------------------------------------------------------------
+     *  BEFORE / AFTER SPLIT COMPARISON SLIDER
+     * ------------------------------------------------------------- */
+    function toggleCompareMode() {
+      isCompareMode = !isCompareMode;
+      const overlay = document.getElementById('splitOverlay');
+      const divider = document.getElementById('splitDivider');
+      const tags = document.getElementById('compareTags');
+      const btn = document.getElementById('btnCompare');
+
+      if (isCompareMode) {
+        overlay.classList.remove('hidden');
+        divider.classList.remove('hidden');
+        tags.classList.remove('hidden');
+        btn.classList.add('bg-emerald-500/20', 'border-emerald-500/40', 'text-emerald-300');
+        syncSplitOverlay();
+      } else {
+        overlay.classList.add('hidden');
+        divider.classList.add('hidden');
+        tags.classList.add('hidden');
+        btn.classList.remove('bg-emerald-500/20', 'border-emerald-500/40', 'text-emerald-300');
+      }
+    }
+
+    function syncSplitOverlay() {
+      if (!isCompareMode) return;
+      const overlay = document.getElementById('splitOverlay');
+      const divider = document.getElementById('splitDivider');
+      const pct = (splitPos * 100).toFixed(2);
+
+      overlay.style.width = `${pct}%`;
+      divider.style.left = `${pct}%`;
+
+      // Match canvas styling inside split view
+      originalCanvas.style.width = `${mainCanvas.clientWidth}px`;
+      originalCanvas.style.height = `${mainCanvas.clientHeight}px`;
+    }
+
+    // Split slider mouse/touch tracking
+    const viewport = document.getElementById('canvasContainer');
+    viewport.addEventListener('mousedown', (e) => {
+      if (!isCompareMode) return;
+      isDraggingSplit = true;
+      handleSplitMove(e);
+    });
+    window.addEventListener('mouseup', () => { isDraggingSplit = false; });
+    window.addEventListener('mousemove', (e) => {
+      if (!isDraggingSplit || !isCompareMode) return;
+      handleSplitMove(e);
+    });
+
+    // Touch events for mobile screens
+    viewport.addEventListener('touchstart', (e) => {
+      if (!isCompareMode) return;
+      isDraggingSplit = true;
+      handleSplitMove(e.touches[0]);
+    });
+    window.addEventListener('touchend', () => { isDraggingSplit = false; });
+    window.addEventListener('touchmove', (e) => {
+      if (!isDraggingSplit || !isCompareMode) return;
+      handleSplitMove(e.touches[0]);
+    });
+
+    function handleSplitMove(e) {
+      const rect = mainCanvas.getBoundingClientRect();
+      const clientX = e.clientX;
+      let pos = (clientX - rect.left) / rect.width;
+      pos = Math.max(0.02, Math.min(0.98, pos));
+      splitPos = pos;
+      syncSplitOverlay();
+    }
+
+    /* -------------------------------------------------------------
+     *  VIEWPORT ZOOM & GEOMETRY
+     * ------------------------------------------------------------- */
+    function zoomIn() {
+      zoom = Math.min(2.5, zoom + 0.15);
+      applyZoom();
+    }
+    function zoomOut() {
+      zoom = Math.max(0.4, zoom - 0.15);
+      applyZoom();
+    }
+    function resetZoom() {
+      zoom = 1.0;
+      applyZoom();
+    }
+    function applyZoom() {
+      const container = document.getElementById('canvasContainer');
+      container.style.transform = `scale(${zoom})`;
+      document.getElementById('zoomLevel').innerText = `${Math.round(zoom * 100)}%`;
+      syncSplitOverlay();
+    }
+
+    function rotateImage(deg) {
+      pushHistory();
+      rotationAngle = (rotationAngle + deg) % 360;
+      renderImage(true);
+    }
+
+    function flipHorizontal() {
+      pushHistory();
+      flipH = flipH * -1;
+      renderImage(true);
+    }
+
+    function toggleHistogramOverlay() {
+      const card = document.getElementById('histogramCard');
+      card.classList.toggle('hidden');
+    }
+
+    /* -------------------------------------------------------------
+     *  INSPECTOR TABS
+     * ------------------------------------------------------------- */
+    function switchTab(tabId) {
+      ['tone', 'color', 'optics'].forEach(t => {
+        const btn = document.getElementById(`tabBtn-${t}`);
+        const content = document.getElementById(`tabContent-${t}`);
+        if (t === tabId) {
+          btn.classList.add('border-emerald-500', 'text-emerald-400');
+          btn.classList.remove('border-transparent', 'text-slate-400');
+          content.classList.remove('hidden');
+        } else {
+          btn.classList.remove('border-emerald-500', 'text-emerald-400');
+          btn.classList.add('border-transparent', 'text-slate-400');
+          content.classList.add('hidden');
+        }
+      });
+    }
+
+    /* -------------------------------------------------------------
+     *  UNDO / REDO HISTORY SYSTEM
+     * ------------------------------------------------------------- */
+    function pushHistory() {
+      // Discard future if branching off intermediate state
+      if (historyIndex < historyStack.length - 1) {
+        historyStack.splice(historyIndex + 1);
+      }
+      historyStack.push({
+        params: JSON.parse(JSON.stringify(params)),
+        rotationAngle,
+        flipH,
+        activePreset
+      });
+      if (historyStack.length > MAX_HISTORY) {
+        historyStack.shift();
+      } else {
+        historyIndex++;
+      }
+      updateHistoryButtons();
+    }
+
+    function undo() {
+      if (historyIndex > 0) {
+        historyIndex--;
+        const state = historyStack[historyIndex];
+        restoreState(state);
+      }
+    }
+
+    function redo() {
+      if (historyIndex < historyStack.length - 1) {
+        historyIndex++;
+        const state = historyStack[historyIndex];
+        restoreState(state);
+      }
+    }
+
+    function restoreState(state) {
+      params = JSON.parse(JSON.stringify(state.params));
+      rotationAngle = state.rotationAngle;
+      flipH = state.flipH;
+      activePreset = state.activePreset;
+      highlightActivePreset();
+      updateAllUIInputs();
+      renderImage(true);
+      updateHistoryButtons();
+    }
+
+    function updateHistoryButtons() {
+      document.getElementById('btnUndo').disabled = (historyIndex <= 0);
+      document.getElementById('btnRedo').disabled = (historyIndex >= historyStack.length - 1);
+    }
+
+    // Keyboard Shortcuts (Ctrl+Z, Ctrl+Y)
+    window.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+        if (e.shiftKey) redo();
+        else undo();
+        e.preventDefault();
+      } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') {
+        redo();
+        e.preventDefault();
+      }
+    });
+
+    /* -------------------------------------------------------------
+     *  DRAG & DROP IMAGE UPLOAD LISTENER
+     * ------------------------------------------------------------- */
+    const dropZone = document.getElementById('dropZone');
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('border-emerald-500/50', 'bg-emerald-950/10');
+    });
+    dropZone.addEventListener('dragleave', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('border-emerald-500/50', 'bg-emerald-950/10');
+    });
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('border-emerald-500/50', 'bg-emerald-950/10');
+      const file = e.dataTransfer.files && e.dataTransfer.files[0];
+      if (file && file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          const img = new Image();
+          img.onload = () => {
+            baseImage = img;
+            rotationAngle = 0;
+            flipH = 1;
+            applyPreset('lush_forest');
+            updateDimensionsLabel();
+          };
+          img.src = ev.target.result;
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+
+    /* -------------------------------------------------------------
+     *  EXPORT STUDIO ENGINE
+     * ------------------------------------------------------------- */
+    function openExportModal() {
+      document.getElementById('exportModal').classList.remove('hidden');
+      updateDimensionsLabel();
+    }
+    function closeExportModal() {
+      document.getElementById('exportModal').classList.add('hidden');
+    }
+
+    function executeExport() {
+      if (!mainCanvas) return;
+      const format = document.getElementById('exportFormat').value;
+      const quality = parseFloat(document.getElementById('exportQuality').value);
+      const fileNameInput = document.getElementById('exportFileName').value.trim() || 'nature_photo';
+
+      const extension = format === 'image/jpeg' ? '.jpg' : format === 'image/png' ? '.png' : '.webp';
+      const dataUrl = mainCanvas.toDataURL(format, quality);
+
+      const link = document.createElement('a');
+      link.download = `${fileNameInput}${extension}`;
+      link.href = dataUrl;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      closeExportModal();
+    }
+
+    /* -------------------------------------------------------------
+     *  INITIALIZATION
+     * ------------------------------------------------------------- */
+    window.onload = function() {
+      initPresets();
+      // Load initial natural photo (Emerald Forest)
+      loadSample('forest');
+      pushHistory();
+      lucide.createIcons();
+
+      // Recalculate canvas on resize
+      window.addEventListener('resize', () => {
+        syncSplitOverlay();
+      });
+    };
+  </script>
+</body>
+</html>
